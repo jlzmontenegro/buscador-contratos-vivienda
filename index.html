@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Contratos - Secretaría de Vivienda</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #ffffff;
+            color: #202124;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-bottom: 1px solid #dadce0;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 400;
+            letter-spacing: -0.015em;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #5f6368;
+            font-size: 0.95rem;
+        }
+
+        .filters-section {
+            background: #ffffff;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #202124;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 0.75rem;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #1f2937;
+            box-shadow: 0 0 0 3px rgba(31, 41, 55, 0.1);
+        }
+
+        .date-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #1f2937;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #111827;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-secondary {
+            background-color: #f3f4f6;
+            color: #202124;
+            border: 1px solid #dadce0;
+        }
+
+        .btn-secondary:hover {
+            background-color: #e5e7eb;
+        }
+
+        .btn-export {
+            background-color: #f3f4f6;
+            color: #202124;
+            border: 1px solid #dadce0;
+        }
+
+        .btn-export:hover {
+            background-color: #e5e7eb;
+        }
+
+        .new-contracts-section {
+            background: #f0f9ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .new-contracts-section h2 {
+            font-size: 1.1rem;
+            color: #1e40af;
+            margin-bottom: 0.5rem;
+        }
+
+        .no-new-contracts {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .new-contracts-list {
+            margin-top: 1rem;
+        }
+
+        .new-contract-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid #0284c7;
+        }
+
+        .new-contract-item .contract-ref {
+            font-weight: 600;
+            color: #202124;
+        }
+
+        .new-contract-item .contract-provider {
+            color: #5f6368;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .results-section {
+            margin-bottom: 2rem;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .results-info {
+            font-size: 0.95rem;
+            color: #5f6368;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        thead {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dadce0;
+        }
+
+        th {
+            padding: 0.6rem 0.4rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: #202124;
+            word-wrap: break-word;
+        }
+
+        td {
+            padding: 0.5rem 0.4rem;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.8rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            vertical-align: top;
+        }
+
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+
+        th.sortable:hover {
+            background-color: #e8eaed;
+        }
+
+        th.sortable .sort-arrow {
+            font-size: 0.65rem;
+            color: #5f6368;
+            margin-left: 0.2rem;
+        }
+
+        th.sortable.sorted {
+            background-color: #e8eaed;
+        }
+
+        /* Anchos de columna: Referencia, Estado, Documento, Nombre, F.Firma, F.Inicio, F.Fin, Valor, Modif, Objeto, SECOP */
+        #contractsTable th:nth-child(1)  { width: 9%; }
+        #contractsTable th:nth-child(2)  { width: 6.5%; }
+        #contractsTable th:nth-child(3)  { width: 7%; }
+        #contractsTable th:nth-child(4)  { width: 12%; }
+        #contractsTable th:nth-child(5)  { width: 6.5%; }
+        #contractsTable th:nth-child(6)  { width: 6.5%; }
+        #contractsTable th:nth-child(7)  { width: 6.5%; }
+        #contractsTable th:nth-child(8)  { width: 7.5%; }
+        #contractsTable th:nth-child(9)  { width: 5.5%; }
+        #contractsTable th:nth-child(10) { width: 26%; }
+        #contractsTable th:nth-child(11) { width: 7%; }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .pagination button,
+        .pagination span {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background-color: #f3f4f6;
+        }
+
+        .pagination button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .pagination .active {
+            background-color: #1f2937;
+            color: white;
+            border-color: #1f2937;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #5f6368;
+        }
+
+        .loading::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .valor-contrato {
+            font-weight: 500;
+            color: #059669;
+        }
+
+        .objeto-contrato {
+            word-wrap: break-word;
+            white-space: normal;
+        }
+
+        .btn-secop {
+            display: inline-block;
+            box-sizing: border-box;
+            max-width: 100%;
+            padding: 0.35rem 0.4rem;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            font-size: 0.72rem;
+            font-weight: 500;
+            text-decoration: none;
+            text-align: center;
+            overflow-wrap: anywhere;
+            transition: all 0.3s;
+        }
+
+        .btn-secop:hover {
+            background-color: #1f2937;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .date-row {
+                grid-template-columns: 1fr;
+            }
+
+            th, td {
+                padding: 0.35rem 0.25rem;
+                font-size: 0.7rem;
+            }
+
+            .results-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            padding: 2rem;
+            border: 1px solid #888;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-header {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            margin-bottom: 1.5rem;
+            color: #5f6368;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>Buscador de Contratos</h1>
+            <p>Secretaría de Vivienda Social y Hábitat - Santiago de Cali</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="messageContainer"></div>
+
+        <!-- FILTROS -->
+        <div class="filters-section">
+            <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem;">Filtros</h3>
+
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label>Búsqueda por palabras</label>
+                    <input type="text" id="searchInput" placeholder="Palabras clave o n° de identificación...">
+                </div>
+
+                <div class="filter-group">
+                    <label>Estado del contrato</label>
+                    <select id="stateFilter">
+                        <option value="">Todos los estados</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-weight: 500; margin-bottom: 0.75rem;">Rango de fechas</label>
+                <div class="date-row">
+                    <div class="filter-group">
+                        <label>Fecha inicial</label>
+                        <input type="date" id="dateFrom">
+                    </div>
+                    <div class="filter-group">
+                        <label>Fecha final</label>
+                        <input type="date" id="dateTo">
+                    </div>
+                    <div class="filter-group">
+                        <label>&nbsp;</label>
+                        <button class="btn-secondary" onclick="clearFilters()">Limpiar filtros</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="applyFilters()">Aplicar filtros</button>
+                <button class="btn-secondary" onclick="loadContrats(true)">Recargar datos</button>
+            </div>
+        </div>
+
+        <!-- CONTRATOS NUEVOS -->
+        <div id="newContractsContainer" style="display: none;">
+            <div class="new-contracts-section">
+                <h2>✨ Contratos nuevos</h2>
+                <div id="newContractsList"></div>
+            </div>
+        </div>
+
+        <!-- RESULTADOS -->
+        <div class="results-section">
+            <div class="results-header">
+                <div class="results-info">
+                    Se encontraron <strong id="totalResults">0</strong> contratos
+                </div>
+                <div class="export-buttons">
+                    <button class="btn-export" onclick="exportToExcel()">📊 Exportar Excel</button>
+                    <button class="btn-export" onclick="exportToPDF()">📄 Exportar PDF</button>
+                </div>
+            </div>
+
+            <div id="loadingContainer" class="loading" style="display: none;"></div>
+
+            <div class="table-wrapper">
+                <table id="contractsTable">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-field="referencia_del_contrato" data-type="text">Referencia</th>
+                            <th class="sortable" data-field="estado_contrato" data-type="text">Estado</th>
+                            <th class="sortable" data-field="documento_proveedor" data-type="number">Documento Proveedor</th>
+                            <th class="sortable" data-field="proveedor_adjudicado" data-type="text">Nombre Proveedor</th>
+                            <th class="sortable" data-field="fecha_de_firma" data-type="date">Fecha Firma</th>
+                            <th class="sortable" data-field="fecha_de_inicio_del_contrato" data-type="date">Fecha Inicio</th>
+                            <th class="sortable" data-field="fecha_de_fin_del_contrato" data-type="date">Fecha Finalización</th>
+                            <th class="sortable" data-field="valor_del_contrato" data-type="number">Valor Contrato</th>
+                            <th class="sortable" data-field="dias_adicionados" data-type="number">Modificaciones</th>
+                            <th class="sortable" data-field="objeto_del_contrato" data-type="text">Objeto del Contrato</th>
+                            <th>SECOP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contractsTableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination" id="paginationContainer"></div>
+        </div>
+    </div>
+
+    <div id="exportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Exportar Datos</div>
+            <div class="modal-body">
+                <p>¿Desea exportar todos los resultados o solo los de la página actual?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeExportModal()">Cancelar</button>
+                <button class="btn-primary" onclick="confirmExportCurrentPage()">Página actual</button>
+                <button class="btn-primary" onclick="confirmExportAll()">Todos los resultados</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://www.datos.gov.co/resource/jbjy-vk9h.json';
+        const ENTITY = "SANTIAGO DE CALI DISTRITO ESPECIAL - SECRETARIA DE VIVIENDA SOCIAL Y HABITAT";
+        const ITEMS_PER_PAGE = 20;
+
+        let allContrats = [];
+        let filteredContrats = [];
+        let currentPage = 1;
+        let exportType = null;
+        let sortField = null;
+        let sortDir = 1; // 1 = ascendente, -1 = descendente
+        let sortType = 'text';
+
+        // INICIALIZAR
+        document.addEventListener('DOMContentLoaded', () => {
+            setDefaultDates();
+            loadContrats(false);
+
+            // Buscar inmediatamente al presionar Enter en cualquier filtro
+            ['searchInput', 'dateFrom', 'dateTo'].forEach(id => {
+                document.getElementById(id).addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        applyFilters();
+                    }
+                });
+            });
+
+            // Ordenar al hacer click en los encabezados
+            document.querySelectorAll('#contractsTable th.sortable').forEach(th => {
+                th.addEventListener('click', () => {
+                    const field = th.dataset.field;
+                    if (sortField === field) {
+                        sortDir = -sortDir; // alternar asc/desc
+                    } else {
+                        sortField = field;
+                        sortDir = 1;
+                        sortType = th.dataset.type;
+                    }
+                    sortContrats();
+                    currentPage = 1;
+                    renderTable();
+                    renderPagination();
+                    updateSortIndicators();
+                });
+            });
+        });
+
+        function sortContrats() {
+            if (!sortField) return;
+
+            filteredContrats.sort((a, b) => {
+                let va = a[sortField];
+                let vb = b[sortField];
+
+                // Vacíos siempre al final
+                const aVacio = va === undefined || va === null || va === '';
+                const bVacio = vb === undefined || vb === null || vb === '';
+                if (aVacio && bVacio) return 0;
+                if (aVacio) return 1;
+                if (bVacio) return -1;
+
+                if (sortType === 'number') {
+                    return (parseFloat(va) - parseFloat(vb)) * sortDir;
+                }
+                if (sortType === 'date') {
+                    return (new Date(va) - new Date(vb)) * sortDir;
+                }
+                return String(va).localeCompare(String(vb), 'es', { sensitivity: 'base' }) * sortDir;
+            });
+        }
+
+        function updateSortIndicators() {
+            document.querySelectorAll('#contractsTable th.sortable').forEach(th => {
+                th.classList.remove('sorted');
+                const arrow = th.querySelector('.sort-arrow');
+                if (arrow) arrow.remove();
+
+                if (th.dataset.field === sortField) {
+                    th.classList.add('sorted');
+                    const span = document.createElement('span');
+                    span.className = 'sort-arrow';
+                    span.textContent = sortDir === 1 ? '▲' : '▼';
+                    th.appendChild(span);
+                }
+            });
+        }
+
+        function setDefaultDates() {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const startDate = new Date(currentYear, 0, 1);
+
+            document.getElementById('dateFrom').valueAsDate = startDate;
+            document.getElementById('dateTo').valueAsDate = today;
+        }
+
+        async function loadContrats(forceRefresh = false) {
+            showLoading(true);
+            hideMessage();
+
+            try {
+                const url = buildQuery();
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error('Respuesta de error:', text);
+                    throw new Error(`Error ${response.status}: ${text}`);
+                }
+
+                const data = await response.json();
+
+                allContrats = data || [];
+
+                // Llenar dropdown de estados con valores reales
+                populateStateFilter(allContrats);
+
+                // Detectar contratos nuevos
+                detectNewContrats(allContrats, forceRefresh);
+
+                // Aplicar filtros actuales
+                applyFilters();
+
+                showMessage(`Se cargaron ${allContrats.length} contratos`, 'success');
+
+                // Guardar en localStorage
+                localStorage.setItem('lastLoadTime', new Date().toISOString());
+                localStorage.setItem('loadedContracts', JSON.stringify(allContrats.map(c => c.referencia_del_contrato)));
+
+            } catch (error) {
+                console.error('Error completo:', error);
+                showMessage('Error al cargar los datos. Verifique la consola (F12) para más detalles.', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function buildQuery() {
+            const startDate = document.getElementById('dateFrom').value;
+            const endDate = document.getElementById('dateTo').value;
+
+            // Filtros aplicados en el servidor (SODA API):
+            // - Solo Prestación de servicios
+            // - Solo Contratación directa (excluye mínima cuantía automáticamente)
+            // - Solo personas naturales (Cédula de Ciudadanía, excluye NIT)
+            const whereClause =
+                `nombre_entidad='${ENTITY}'` +
+                ` AND tipo_de_contrato='Prestación de servicios'` +
+                ` AND modalidad_de_contratacion='Contratación directa'` +
+                ` AND tipodocproveedor!='NIT'` +
+                ` AND fecha_de_firma>='${startDate}T00:00:00'` +
+                ` AND fecha_de_firma<='${endDate}T23:59:59'`;
+
+            const params = new URLSearchParams({
+                '$where': whereClause,
+                '$order': 'fecha_de_firma DESC',
+                '$limit': '50000'
+            });
+
+            return `${API_URL}?${params.toString()}`;
+        }
+
+        function populateStateFilter(contrats) {
+            const select = document.getElementById('stateFilter');
+            const currentValue = select.value;
+            const estados = [...new Set(contrats.map(c => c.estado_contrato).filter(Boolean))].sort();
+
+            select.innerHTML = '<option value="">Todos los estados</option>' +
+                estados.map(e => `<option value="${e}">${e}</option>`).join('');
+
+            // Mantener selección previa si aún existe
+            if (estados.includes(currentValue)) select.value = currentValue;
+        }
+
+        function detectNewContrats(contrats, forceRefresh) {
+            const container = document.getElementById('newContractsContainer');
+            const listDiv = document.getElementById('newContractsList');
+
+            const stored = localStorage.getItem('loadedContracts');
+
+            // Primera visita: establecer línea base, no marcar todo como nuevo
+            if (stored === null) {
+                listDiv.innerHTML = '<p class="no-new-contracts">Primera consulta registrada. Los contratos nuevos aparecerán aquí en próximas visitas.</p>';
+                container.style.display = 'block';
+                return;
+            }
+
+            const lastContractIds = JSON.parse(stored);
+            const newContracts = contrats.filter(c => !lastContractIds.includes(c.referencia_del_contrato));
+
+            if (newContracts.length > 0) {
+                listDiv.innerHTML = `<p class="no-new-contracts" style="margin-bottom: 1rem;">Se encontraron <strong>${newContracts.length}</strong> nuevo${newContracts.length !== 1 ? 's' : ''} contrato${newContracts.length !== 1 ? 's' : ''}:</p>` +
+                    newContracts.map(c => `
+                        <div class="new-contract-item">
+                            <div class="contract-ref">${c.referencia_del_contrato}</div>
+                            <div class="contract-provider">${c.proveedor_adjudicado || 'N/A'}</div>
+                        </div>
+                    `).join('');
+                container.style.display = 'block';
+            } else {
+                listDiv.innerHTML = '<p class="no-new-contracts">No hay contratos nuevos desde la última consulta</p>';
+            }
+            container.style.display = 'block';
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const stateFilter = document.getElementById('stateFilter').value;
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+
+            filteredContrats = allContrats.filter(c => {
+                // Búsqueda por palabras
+                if (searchTerm) {
+                    const searchFields = [
+                        c.referencia_del_contrato,
+                        c.proveedor_adjudicado,
+                        c.documento_proveedor,
+                        c.objeto_del_contrato,
+                        c.modalidad_de_contratacion
+                    ].join(' ').toLowerCase();
+
+                    if (!searchFields.includes(searchTerm)) return false;
+                }
+
+                // Filtro por estado
+                if (stateFilter && (c.estado_contrato || '').toUpperCase() !== stateFilter.toUpperCase()) {
+                    return false;
+                }
+
+                // Filtro por fecha
+                const fechaFirma = c.fecha_de_firma ? c.fecha_de_firma.split('T')[0] : '';
+                if (dateFrom && fechaFirma < dateFrom) return false;
+                if (dateTo && fechaFirma > dateTo) return false;
+
+                return true;
+            });
+
+            sortContrats(); // mantener el orden activo al filtrar
+            currentPage = 1;
+            renderTable();
+            renderPagination();
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('stateFilter').value = '';
+            setDefaultDates();
+            applyFilters();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('contractsTableBody');
+            const start = (currentPage - 1) * ITEMS_PER_PAGE;
+            const end = start + ITEMS_PER_PAGE;
+            const pageItems = filteredContrats.slice(start, end);
+
+            tbody.innerHTML = pageItems.map(c => {
+                const secopUrl = c.urlproceso && c.urlproceso.url ? c.urlproceso.url : '';
+                const secopBtn = secopUrl
+                    ? `<a href="${secopUrl}" target="_blank" rel="noopener" class="btn-secop">Ver en SECOP ↗</a>`
+                    : 'N/A';
+                return `
+                <tr>
+                    <td><strong>${c.referencia_del_contrato || 'N/A'}</strong></td>
+                    <td>${c.estado_contrato || 'N/A'}</td>
+                    <td>${c.documento_proveedor || 'N/A'}</td>
+                    <td>${c.proveedor_adjudicado || 'N/A'}</td>
+                    <td>${formatDate(c.fecha_de_firma) || 'N/A'}</td>
+                    <td>${formatDate(c.fecha_de_inicio_del_contrato) || 'N/A'}</td>
+                    <td>${formatDate(c.fecha_de_fin_del_contrato) || 'N/A'}</td>
+                    <td class="valor-contrato">$${formatNumber(c.valor_del_contrato)}</td>
+                    <td>${c.dias_adicionados || 0} días</td>
+                    <td class="objeto-contrato">${c.objeto_del_contrato || 'N/A'}</td>
+                    <td>${secopBtn}</td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('totalResults').textContent = filteredContrats.length;
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredContrats.length / ITEMS_PER_PAGE);
+            const container = document.getElementById('paginationContainer');
+
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+
+            if (currentPage > 1) {
+                html += `<button onclick="changePage(${currentPage - 1})">← Anterior</button>`;
+            }
+
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+
+            if (startPage > 1) {
+                html += `<button onclick="changePage(1)">1</button>`;
+                if (startPage > 2) html += `<span>...</span>`;
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                if (i === currentPage) {
+                    html += `<span class="active">${i}</span>`;
+                } else {
+                    html += `<button onclick="changePage(${i})">${i}</button>`;
+                }
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) html += `<span>...</span>`;
+                html += `<button onclick="changePage(${totalPages})">${totalPages}</button>`;
+            }
+
+            if (currentPage < totalPages) {
+                html += `<button onclick="changePage(${currentPage + 1})">Siguiente →</button>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            renderTable();
+            renderPagination();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showExportModal(type) {
+            exportType = type;
+            document.getElementById('exportModal').classList.add('show');
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.remove('show');
+            exportType = null;
+        }
+
+        function confirmExportCurrentPage() {
+            const data = getPageData();
+            if (exportType === 'excel') {
+                doExportToExcel(data);
+            } else if (exportType === 'pdf') {
+                doExportToPDF(data);
+            }
+            closeExportModal();
+        }
+
+        function confirmExportAll() {
+            if (exportType === 'excel') {
+                doExportToExcel(filteredContrats);
+            } else if (exportType === 'pdf') {
+                doExportToPDF(filteredContrats);
+            }
+            closeExportModal();
+        }
+
+        function getPageData() {
+            const start = (currentPage - 1) * ITEMS_PER_PAGE;
+            const end = start + ITEMS_PER_PAGE;
+            return filteredContrats.slice(start, end);
+        }
+
+        function exportToExcel() {
+            showExportModal('excel');
+        }
+
+        function exportToPDF() {
+            showExportModal('pdf');
+        }
+
+        function doExportToExcel(data) {
+            const ws = XLSX.utils.json_to_sheet(
+                data.map(c => ({
+                    'Referencia': c.referencia_del_contrato,
+                    'Estado': c.estado_contrato,
+                    'Documento Proveedor': c.documento_proveedor,
+                    'Nombre Proveedor': c.proveedor_adjudicado,
+                    'Fecha Firma': formatDate(c.fecha_de_firma),
+                    'Fecha Inicio': formatDate(c.fecha_de_inicio_del_contrato),
+                    'Fecha Finalización': formatDate(c.fecha_de_fin_del_contrato),
+                    'Valor': c.valor_del_contrato,
+                    'Modificaciones (días)': c.dias_adicionados,
+                    'Objeto': c.objeto_del_contrato,
+                    'URL SECOP': c.urlproceso && c.urlproceso.url ? c.urlproceso.url : ''
+                }))
+            );
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Contratos');
+            XLSX.writeFile(wb, `contratos_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showMessage('Archivo Excel generado correctamente', 'success');
+        }
+
+        function doExportToPDF(data) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const columns = ['Referencia', 'Estado', 'Documento', 'Nombre Proveedor', 'F. Firma', 'F. Inicio', 'F. Fin', 'Valor', 'Modif.', 'Objeto'];
+            const rows = data.map(c => [
+                c.referencia_del_contrato || 'N/A',
+                c.estado_contrato || 'N/A',
+                c.documento_proveedor || 'N/A',
+                c.proveedor_adjudicado || 'N/A',
+                formatDate(c.fecha_de_firma) || 'N/A',
+                formatDate(c.fecha_de_inicio_del_contrato) || 'N/A',
+                formatDate(c.fecha_de_fin_del_contrato) || 'N/A',
+                '$' + formatNumber(c.valor_del_contrato),
+                (c.dias_adicionados || 0) + ' días',
+                c.objeto_del_contrato || 'N/A'
+            ]);
+
+            doc.autoTable({
+                head: [columns],
+                body: rows,
+                startY: 20,
+                theme: 'grid',
+                styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
+                headStyles: { fillColor: [31, 41, 55] },
+                columnStyles: {
+                    0: { cellWidth: 32 },
+                    1: { cellWidth: 20 },
+                    2: { cellWidth: 20 },
+                    3: { cellWidth: 35 },
+                    4: { cellWidth: 18 },
+                    5: { cellWidth: 18 },
+                    6: { cellWidth: 18 },
+                    7: { cellWidth: 22 },
+                    8: { cellWidth: 14 },
+                    9: { cellWidth: 'auto' }
+                }
+            });
+
+            doc.setFontSize(14);
+            doc.text('Reporte de Contratos', 14, 10);
+
+            doc.save(`contratos_${new Date().toISOString().split('T')[0]}.pdf`);
+            showMessage('Archivo PDF generado correctamente', 'success');
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        }
+
+        function formatNumber(value) {
+            if (!value) return '0';
+            return parseInt(value).toLocaleString('es-CO');
+        }
+
+        function showMessage(message, type) {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="${type}">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        function hideMessage() {
+            document.getElementById('messageContainer').innerHTML = '';
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingContainer').style.display = show ? 'block' : 'none';
+        }
+
+        // Cerrar modal al hacer click fuera
+        window.onclick = (event) => {
+            const modal = document.getElementById('exportModal');
+            if (event.target === modal) {
+                closeExportModal();
+            }
+        };
+    </script>
+</body>
+</html>
