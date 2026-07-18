@@ -184,6 +184,34 @@
             margin-top: 0.25rem;
         }
 
+        .new-contracts-pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .new-contracts-pagination button {
+            padding: 0.4rem 0.75rem;
+            border: 1px solid #bfdbfe;
+            border-radius: 4px;
+            background: white;
+            color: #1e40af;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .new-contracts-pagination button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .new-contracts-pagination span {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
         .results-section {
             margin-bottom: 2rem;
         }
@@ -263,18 +291,19 @@
             background-color: #e8eaed;
         }
 
-        /* Anchos de columna: Referencia, Estado, Documento, Nombre, F.Firma, F.Inicio, F.Fin, Valor, Modif, Objeto, SECOP */
-        #contractsTable th:nth-child(1)  { width: 9%; }
-        #contractsTable th:nth-child(2)  { width: 6.5%; }
-        #contractsTable th:nth-child(3)  { width: 7%; }
-        #contractsTable th:nth-child(4)  { width: 12%; }
-        #contractsTable th:nth-child(5)  { width: 6.5%; }
-        #contractsTable th:nth-child(6)  { width: 6.5%; }
-        #contractsTable th:nth-child(7)  { width: 6.5%; }
-        #contractsTable th:nth-child(8)  { width: 7.5%; }
-        #contractsTable th:nth-child(9)  { width: 5.5%; }
-        #contractsTable th:nth-child(10) { width: 26%; }
-        #contractsTable th:nth-child(11) { width: 7%; }
+        /* Anchos de columna: Referencia, Estado, Documento, Nombre, F.Firma, F.Inicio, F.Fin, Valor, Modif, Objeto, Supervisor, SECOP */
+        #contractsTable th:nth-child(1)  { width: 8.5%; }
+        #contractsTable th:nth-child(2)  { width: 6%; }
+        #contractsTable th:nth-child(3)  { width: 6.5%; }
+        #contractsTable th:nth-child(4)  { width: 10.5%; }
+        #contractsTable th:nth-child(5)  { width: 6%; }
+        #contractsTable th:nth-child(6)  { width: 6%; }
+        #contractsTable th:nth-child(7)  { width: 6%; }
+        #contractsTable th:nth-child(8)  { width: 7%; }
+        #contractsTable th:nth-child(9)  { width: 5%; }
+        #contractsTable th:nth-child(10) { width: 22%; }
+        #contractsTable th:nth-child(11) { width: 10%; }
+        #contractsTable th:nth-child(12) { width: 6.5%; }
 
         tr:hover {
             background-color: #f8f9fa;
@@ -540,6 +569,7 @@
                             <th class="sortable" data-field="valor_del_contrato" data-type="number">Valor Contrato</th>
                             <th class="sortable" data-field="dias_adicionados" data-type="number">Modificaciones</th>
                             <th class="sortable" data-field="objeto_del_contrato" data-type="text">Objeto del Contrato</th>
+                            <th class="sortable" data-field="nombre_supervisor" data-type="text">Supervisor</th>
                             <th>SECOP</th>
                         </tr>
                     </thead>
@@ -578,6 +608,9 @@
         let sortField = null;
         let sortDir = 1; // 1 = ascendente, -1 = descendente
         let sortType = 'text';
+        let newContractsData = [];
+        let newContractsPage = 1;
+        const NEW_ITEMS_PER_PAGE = 5;
 
         // INICIALIZAR
         document.addEventListener('DOMContentLoaded', () => {
@@ -654,13 +687,15 @@
             });
         }
 
-        function setDefaultDates() {
-            const today = new Date();
-            const currentYear = today.getFullYear();
-            const startDate = new Date(currentYear, 0, 1);
+        function toLocalDateString(d) {
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
 
-            document.getElementById('dateFrom').valueAsDate = startDate;
-            document.getElementById('dateTo').valueAsDate = today;
+        function setDefaultDates() {
+            // Usar fecha local (valueAsDate usa UTC y puede correr el día)
+            const today = new Date();
+            document.getElementById('dateFrom').value = `${today.getFullYear()}-01-01`;
+            document.getElementById('dateTo').value = toLocalDateString(today);
         }
 
         async function loadContrats(forceRefresh = false) {
@@ -672,6 +707,7 @@
 
                 const response = await fetch(url, {
                     method: 'GET',
+                    cache: 'no-store', // siempre traer datos frescos de la API
                     headers: { 'Accept': 'application/json' }
                 });
 
@@ -694,7 +730,8 @@
                 // Aplicar filtros actuales
                 applyFilters();
 
-                showMessage(`Se cargaron ${allContrats.length} contratos`, 'success');
+                const ahora = new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+                showMessage(`Se cargaron ${allContrats.length} contratos (consulta: ${ahora})`, 'success');
 
                 // Guardar en localStorage
                 localStorage.setItem('lastLoadTime', new Date().toISOString());
@@ -759,21 +796,47 @@
             }
 
             const lastContractIds = JSON.parse(stored);
-            const newContracts = contrats.filter(c => !lastContractIds.includes(c.referencia_del_contrato));
+            newContractsData = contrats.filter(c => !lastContractIds.includes(c.referencia_del_contrato));
+            newContractsPage = 1;
 
-            if (newContracts.length > 0) {
-                listDiv.innerHTML = `<p class="no-new-contracts" style="margin-bottom: 1rem;">Se encontraron <strong>${newContracts.length}</strong> nuevo${newContracts.length !== 1 ? 's' : ''} contrato${newContracts.length !== 1 ? 's' : ''}:</p>` +
-                    newContracts.map(c => `
-                        <div class="new-contract-item">
-                            <div class="contract-ref">${c.referencia_del_contrato}</div>
-                            <div class="contract-provider">${c.proveedor_adjudicado || 'N/A'}</div>
-                        </div>
-                    `).join('');
-                container.style.display = 'block';
+            if (newContractsData.length > 0) {
+                renderNewContracts();
             } else {
                 listDiv.innerHTML = '<p class="no-new-contracts">No hay contratos nuevos desde la última consulta</p>';
             }
             container.style.display = 'block';
+        }
+
+        function renderNewContracts() {
+            const listDiv = document.getElementById('newContractsList');
+            const total = newContractsData.length;
+            const totalPages = Math.ceil(total / NEW_ITEMS_PER_PAGE);
+            const start = (newContractsPage - 1) * NEW_ITEMS_PER_PAGE;
+            const pageItems = newContractsData.slice(start, start + NEW_ITEMS_PER_PAGE);
+
+            let html = `<p class="no-new-contracts" style="margin-bottom: 1rem;">Se encontraron <strong>${total}</strong> contrato${total !== 1 ? 's' : ''} nuevo${total !== 1 ? 's' : ''}:</p>` +
+                pageItems.map(c => `
+                    <div class="new-contract-item">
+                        <div class="contract-ref">${c.referencia_del_contrato}</div>
+                        <div class="contract-provider">${c.proveedor_adjudicado || 'N/A'}</div>
+                    </div>
+                `).join('');
+
+            if (totalPages > 1) {
+                html += `
+                    <div class="new-contracts-pagination">
+                        <button ${newContractsPage === 1 ? 'disabled' : ''} onclick="changeNewContractsPage(-1)">← Anterior</button>
+                        <span>Página ${newContractsPage} de ${totalPages}</span>
+                        <button ${newContractsPage === totalPages ? 'disabled' : ''} onclick="changeNewContractsPage(1)">Siguiente →</button>
+                    </div>`;
+            }
+
+            listDiv.innerHTML = html;
+        }
+
+        function changeNewContractsPage(delta) {
+            newContractsPage += delta;
+            renderNewContracts();
         }
 
         function applyFilters() {
@@ -845,6 +908,7 @@
                     <td class="valor-contrato">$${formatNumber(c.valor_del_contrato)}</td>
                     <td>${c.dias_adicionados || 0} días</td>
                     <td class="objeto-contrato">${c.objeto_del_contrato || 'N/A'}</td>
+                    <td>${c.nombre_supervisor || 'N/A'}</td>
                     <td>${secopBtn}</td>
                 </tr>`;
             }).join('');
@@ -958,6 +1022,7 @@
                     'Valor': c.valor_del_contrato,
                     'Modificaciones (días)': c.dias_adicionados,
                     'Objeto': c.objeto_del_contrato,
+                    'Supervisor': c.nombre_supervisor,
                     'URL SECOP': c.urlproceso && c.urlproceso.url ? c.urlproceso.url : ''
                 }))
             );
@@ -976,7 +1041,7 @@
                 format: 'a4'
             });
 
-            const columns = ['Referencia', 'Estado', 'Documento', 'Nombre Proveedor', 'F. Firma', 'F. Inicio', 'F. Fin', 'Valor', 'Modif.', 'Objeto'];
+            const columns = ['Referencia', 'Estado', 'Documento', 'Nombre Proveedor', 'F. Firma', 'F. Inicio', 'F. Fin', 'Valor', 'Modif.', 'Objeto', 'Supervisor'];
             const rows = data.map(c => [
                 c.referencia_del_contrato || 'N/A',
                 c.estado_contrato || 'N/A',
@@ -987,7 +1052,8 @@
                 formatDate(c.fecha_de_fin_del_contrato) || 'N/A',
                 '$' + formatNumber(c.valor_del_contrato),
                 (c.dias_adicionados || 0) + ' días',
-                c.objeto_del_contrato || 'N/A'
+                c.objeto_del_contrato || 'N/A',
+                c.nombre_supervisor || 'N/A'
             ]);
 
             doc.autoTable({
@@ -998,16 +1064,17 @@
                 styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
                 headStyles: { fillColor: [31, 41, 55] },
                 columnStyles: {
-                    0: { cellWidth: 32 },
-                    1: { cellWidth: 20 },
-                    2: { cellWidth: 20 },
-                    3: { cellWidth: 35 },
-                    4: { cellWidth: 18 },
-                    5: { cellWidth: 18 },
-                    6: { cellWidth: 18 },
-                    7: { cellWidth: 22 },
-                    8: { cellWidth: 14 },
-                    9: { cellWidth: 'auto' }
+                    0: { cellWidth: 28 },
+                    1: { cellWidth: 17 },
+                    2: { cellWidth: 18 },
+                    3: { cellWidth: 30 },
+                    4: { cellWidth: 16 },
+                    5: { cellWidth: 16 },
+                    6: { cellWidth: 16 },
+                    7: { cellWidth: 20 },
+                    8: { cellWidth: 12 },
+                    9: { cellWidth: 'auto' },
+                    10: { cellWidth: 28 }
                 }
             });
 
