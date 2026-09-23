@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cruce del plan de previsión 2026 - Secretaría de Vivienda</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#fff;color:#202124;line-height:1.6}
+.container{max-width:1400px;margin:0 auto;padding:0 1rem}
+.tabs{border-bottom:1px solid #dadce0;background:#fff;position:sticky;top:0;z-index:20}
+.tabs .container{display:flex;gap:.25rem}
+.tab{padding:.9rem 1.15rem;font-size:.9rem;color:#5f6368;text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+.tab:hover{color:#202124;background:#f8f9fa}
+.tab.active{color:#1f2937;font-weight:500;border-bottom-color:#1f2937}
+.header{background:linear-gradient(135deg,#f8f9fa,#fff);border-bottom:1px solid #dadce0;padding:2rem 0;margin-bottom:2rem}
+h1{font-size:1.9rem;font-weight:400;letter-spacing:-.015em;margin-bottom:.4rem}
+.sub{color:#5f6368;font-size:.9rem}
+h2{font-size:1.15rem;font-weight:500;margin:2.5rem 0 .3rem;padding-top:.5rem}
+h2 .n{color:#5f6368;font-weight:400;font-size:.95rem}
+.desc{color:#5f6368;font-size:.875rem;margin-bottom:1rem;max-width:80ch}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:1rem;margin-bottom:1rem}
+.kpi{border:1px solid #dadce0;border-radius:8px;padding:1.1rem 1.2rem}
+.kpi .v{font-size:2rem;font-weight:500;line-height:1.1}
+.kpi .t{font-size:.82rem;font-weight:500;margin-top:.35rem}
+.kpi .d{font-size:.75rem;color:#5f6368;margin-top:.25rem;line-height:1.4}
+.kpi.ok{border-left:4px solid #1e8e3e}.kpi.ok .v{color:#1e8e3e}
+.kpi.new{border-left:4px solid #b7791f}.kpi.new .v{color:#b7791f}
+.kpi.warn{border-left:4px solid #c5221f}.kpi.warn .v{color:#c5221f}
+.kpi.info{border-left:4px solid #1967d2}.kpi.info .v{color:#1967d2}
+.tw{border:1px solid #dadce0;border-radius:8px;overflow:auto;max-height:620px}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+th{background:#f3f4f6;text-align:left;padding:.7rem .75rem;font-weight:500;position:sticky;top:0;border-bottom:1px solid #dadce0;white-space:nowrap;z-index:2}
+td{padding:.6rem .75rem;border-bottom:1px solid #f1f3f4;vertical-align:top}
+tr:hover td{background:#f8f9fa}
+.mono{font-family:'SF Mono',Consolas,monospace;font-size:.78rem;white-space:nowrap}
+.num{text-align:right;white-space:nowrap}
+.nota{font-size:.78rem;color:#5f6368;min-width:26rem}
+.pill{display:inline-block;padding:.12rem .5rem;border-radius:99px;font-size:.72rem;white-space:nowrap}
+.pill-ok{background:#e6f4ea;color:#137333}
+.p-ya{background:#e8eaed;color:#3c4043}.p-nueva{background:#fef7e0;color:#9a6700}
+.p-ver{background:#fce8e6;color:#c5221f}.p-sin{background:#e8f0fe;color:#1967d2}
+.bar{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:.8rem;align-items:center}
+input,select,button{padding:.55rem .7rem;border:1px solid #dadce0;border-radius:4px;font-size:.87rem;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:#1f2937;box-shadow:0 0 0 3px rgba(31,41,55,.1)}
+#q{flex:1;min-width:240px}
+button{cursor:pointer;background:#f3f4f6;font-weight:500}
+button:hover{background:#e5e7eb}
+.btn-primary{background:#1f2937;color:#fff;border-color:#1f2937}
+.btn-primary:hover{background:#111827}
+.cnt{color:#5f6368;font-size:.82rem}
+.legend{display:flex;gap:1.2rem;flex-wrap:wrap;font-size:.8rem;color:#5f6368;margin:.5rem 0 1.5rem}
+.sw{display:inline-block;width:.85rem;height:.85rem;border-radius:3px;vertical-align:-2px;margin-right:.35rem;border:1px solid rgba(0,0,0,.15)}
+footer{margin:3rem 0 2rem;padding-top:1.2rem;border-top:1px solid #dadce0;color:#5f6368;font-size:.8rem}
+a{color:#1967d2}
+.empty{padding:1.2rem;color:#5f6368;font-size:.85rem}
+.estado{padding:1rem 1.2rem;border-radius:8px;margin-bottom:1.5rem;font-size:.88rem}
+.cargando{background:#f3f4f6;border:1px solid #dadce0}
+.error{background:#fce8e6;border:1px solid #f5c6c3;color:#a50e0e}
+.aviso{background:#fef7e0;border:1px solid #f0d799;color:#7a5900;font-size:.82rem;padding:.9rem 1.2rem;border-radius:8px;margin-bottom:1.5rem}
+.spin{display:inline-block;width:1rem;height:1rem;border:2px solid #dadce0;border-top-color:#1f2937;border-radius:50%;animation:g .8s linear infinite;vertical-align:-3px;margin-right:.5rem}
+@keyframes g{to{transform:rotate(360deg)}}
+@media(max-width:640px){h1{font-size:1.4rem}.nota{min-width:14rem}}
+</style>
+</head>
+<body>
+
+<nav class="tabs"><div class="container">
+  <a class="tab" href="index.html">Buscador de contratos</a>
+  <a class="tab active" href="informe_cruce.html">Cruce del plan de previsión</a>
+</div></nav>
+
+<div class="header"><div class="container">
+  <h1>Cruce del plan de previsión con la contratación real</h1>
+  <p class="sub">Secretaría de Vivienda Social y Hábitat · Santiago de Cali &nbsp;·&nbsp;
+  Plan de previsión <b id="anio">2026</b> × SECOP II (datos.gov.co, <span class="mono">jbjy-vk9h</span>)
+  &nbsp;·&nbsp; <span id="sello">consultando…</span></p>
+</div></div>
+
+<div class="container">
+  <div id="estado" class="estado cargando"><span class="spin"></span>Consultando los contratos publicados en SECOP II…</div>
+  <div id="contenido" style="display:none">
+
+    <div class="kpis" id="kpis"></div>
+    <div class="legend">
+      <span><span class="sw" style="background:#FFF7D6"></span>Fila nueva tomada de SECOP</span>
+      <span><span class="sw" style="background:#FBD5D5"></span>Requiere verificación (valor de cuota)</span>
+      <span><span class="sw" style="background:#DDEBF7"></span>Contratista sin insuficiencia asignada</span>
+      <span>Son los mismos colores con que quedaron marcadas las filas en el Excel de seguimiento.</span>
+    </div>
+
+    <h2>1. Filas nuevas cuyo valor no corresponde a la cuota de la insuficiencia <span class="n" id="n1"></span></h2>
+    <p class="desc">La fila se añade bajo la insuficiencia que el contratista ya venía ocupando, pero el valor del contrato
+    no es múltiplo (entero ni medio) del valor de la cuota de esa insuficiencia. Puede indicar que la persona pasó a otra
+    insuficiencia, un cambio de perfil o un valor parcial. «Razón» es valor del contrato ÷ valor de la cuota; cuando la
+    insuficiencia no tiene cuota registrada en el plan, la correspondencia no se puede comprobar.</p>
+    <div class="tw"><table><thead><tr><th>Contrato</th><th>Cédula</th><th>Nombre</th><th>CNP actual</th>
+    <th class="num">Valor contrato</th><th class="num">Valor cuota</th><th class="num">Razón</th><th>Cuotas compatibles en el plan</th></tr></thead>
+    <tbody id="t1"></tbody></table></div>
+
+    <h2>2. Contratistas con contrato en SECOP pero sin insuficiencia en el plan <span class="n" id="n2"></span></h2>
+    <p class="desc">No fue posible ubicarlos ni por cédula ni por nombre en la hoja CONTRATACIÓN. En el Excel quedaron
+    añadidos al final, resaltados en azul y con el CNP en blanco para que se les asigne la insuficiencia que corresponda.</p>
+    <div class="tw"><table><thead><tr><th>Contrato</th><th>Cédula</th><th>Nombre</th><th class="num">Valor</th>
+    <th>Firma</th><th>Fin</th><th>Estado SECOP</th><th>¿Vigente?</th><th>Cuotas compatibles en el plan</th></tr></thead>
+    <tbody id="t2"></tbody></table></div>
+
+    <h2>3. Contratos registrados en el plan que no aparecen en SECOP <span class="n" id="n3"></span></h2>
+    <p class="desc">Están en la hoja CONTRATACIÓN pero no se encontraron en la consulta a SECOP II. Conviene verificar
+    el número del contrato o si falta publicarlo.</p>
+    <div class="tw"><table><thead><tr><th>Fila del Excel</th><th>Contrato</th><th>Cédula</th><th>Nombre</th><th>CNP</th></tr></thead>
+    <tbody id="t3"></tbody></table></div>
+
+    <h2>4. Contratos ya registrados cuyo valor difiere del publicado en SECOP <span class="n" id="n4"></span></h2>
+    <p class="desc">El contrato sí estaba en el plan, pero el «Vr total del contrato» registrado no coincide con el valor
+    publicado. En varios casos se explica por adiciones u otrosí posteriores; conviene contrastarlo con la hoja OTROSI.</p>
+    <div class="tw"><table><thead><tr><th>Fila del Excel</th><th>Contrato</th><th>Nombre</th>
+    <th class="num">Valor en el plan</th><th class="num">Valor en SECOP</th><th class="num">Diferencia</th></tr></thead>
+    <tbody id="t4"></tbody></table></div>
+
+    <h2>5. Todos los contratos del año <span class="n" id="n5"></span></h2>
+    <p class="desc">Listado completo de la consulta a SECOP II con el resultado del cruce y el contrato vigente de cada contratista.</p>
+    <div class="bar">
+      <input id="q" type="search" placeholder="Buscar por nombre, cédula, contrato o CNP…">
+      <select id="fc"><option value="">Todos los cruces</option><option>Ya registrado</option><option>Fila nueva</option><option>Fila nueva — verificar</option><option>Sin insuficiencia</option></select>
+      <select id="fv"><option value="">Vigentes y no vigentes</option><option value="si">Solo vigentes hoy</option><option value="no">Solo no vigentes</option></select>
+      <button id="xls">Descargar Excel</button>
+      <span class="cnt" id="cnt"></span>
+    </div>
+    <div class="tw"><table><thead><tr><th>Contrato</th><th>Cédula</th><th>Nombre</th><th>CNP</th>
+    <th class="num">Valor</th><th>Firma</th><th>Fin</th><th>Estado</th><th>¿Vigente?</th>
+    <th>Contrato vigente del contratista</th><th>Cruce</th><th>SECOP</th></tr></thead>
+    <tbody id="t5"></tbody></table></div>
+
+    <footer>
+      <b>Cómo se hace el cruce.</b> Llave principal: el número de contrato, cuyo formato es idéntico en ambas fuentes.
+      Cuando un contrato de SECOP no está en el plan, se ubica al contratista por cédula y, en su defecto, por nombre
+      normalizado, y se propone una fila replicando su insuficiencia (CNP, plan, perfil, cuota). El número de cuotas se
+      calcula como valor del contrato ÷ valor de la cuota; si no da un múltiplo entero o medio, el caso se marca para
+      verificación en lugar de reasignarlo automáticamente.<br><br>
+      <b>Actualización.</b> Los contratos se consultan en vivo contra la API de datos abiertos cada vez que se abre esta
+      página, así que el cruce siempre refleja lo último publicado en SECOP II. El plan de previsión proviene de la hoja
+      CONTRATACIÓN del archivo de seguimiento y se actualiza cuando se vuelve a exportar
+      (<span class="mono">datos_plan.json</span>, exportado el <span id="exportado">—</span>).<br><br>
+      <b>Datos personales.</b> Esta página muestra nombres y números de cédula de contratistas, junto con información de
+      planeación interna de la Secretaría. Los contratos y la identificación de los contratistas provienen del registro
+      público de SECOP II; la clasificación por insuficiencias y las notas de verificación son de uso administrativo.
+      Su publicación en este sitio fue decidida por el responsable del seguimiento.
+    </footer>
+  </div>
+</div>
+
+<script>
+const API = 'https://www.datos.gov.co/resource/jbjy-vk9h.json';
+const ENTIDAD = 'SANTIAGO DE CALI DISTRITO ESPECIAL - SECRETARIA DE VIVIENDA SOCIAL Y HABITAT';
+
+const hoyISO = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
+
+/* ---------- normalizadores (equivalentes a los del script de Excel) ---------- */
+const soloDig = v => (v == null ? null : (String(v).replace(/\D/g, '') || null));
+const normRef = v => (v == null ? null : (String(v).replace(/[\s ]/g, '').toUpperCase() || null));
+const normNom = v => v == null ? null : (String(v).normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^A-Za-z ]/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase() || null);
+const esc = s => (s ?? '').toString().replace(/[<>&]/g, m => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[m]));
+const pesos = v => v == null || v === '' ? '' : '$' + Number(v).toLocaleString('es-CO');
+const fdate = s => { if (!s) return ''; const p = String(s).slice(0,10).split('-'); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : esc(s); };
+
+/** nº de cuotas si el valor es múltiplo entero o medio de la cuota; si no, null */
+function multiploCuota(valor, cuota) {
+  if (!cuota || !valor || cuota <= 0) return null;
+  const r = valor / cuota, ap = Math.round(r * 2) / 2;
+  return (ap > 0 && Math.abs(r - ap) < 0.02) ? ap : null;
+}
+
+let CRUCE = null;
+
+/* ---------- carga ---------- */
+async function iniciar() {
+  try {
+    const plan = await (await fetch('datos_plan.json', {cache: 'no-store'})).json();
+    const anio = anioDelPlan(plan.filas);
+    document.getElementById('anio').textContent = anio;
+    document.getElementById('exportado').textContent = fdate(plan.exportado);
+
+    const donde = `nombre_entidad='${ENTIDAD}'`
+      + ` AND tipo_de_contrato='Prestación de servicios'`
+      + ` AND modalidad_de_contratacion='Contratación directa'`
+      + ` AND tipodocproveedor!='NIT'`
+      + ` AND fecha_de_firma>='${anio}-01-01T00:00:00'`
+      + ` AND fecha_de_firma<='${anio}-12-31T23:59:59'`;
+    const url = `${API}?${new URLSearchParams({'$where': donde, '$order': 'fecha_de_firma DESC', '$limit': '50000'})}`;
+
+    const resp = await fetch(url, {cache: 'no-store', headers: {Accept: 'application/json'}});
+    if (!resp.ok) throw new Error(`La API respondió ${resp.status}`);
+    const secop = await resp.json();
+
+    CRUCE = cruzar(plan.filas, secop);
+    pintar(CRUCE);
+
+    document.getElementById('sello').textContent =
+      'actualizado el ' + new Date().toLocaleString('es-CO', {dateStyle: 'short', timeStyle: 'short'});
+    document.getElementById('estado').style.display = 'none';
+    document.getElementById('contenido').style.display = '';
+  } catch (e) {
+    const d = document.getElementById('estado');
+    d.className = 'estado error';
+    d.innerHTML = `<b>No fue posible construir el cruce.</b><br>${esc(e.message)}<br>
+      Puede deberse a que la API de datos abiertos no esté respondiendo. Recargue la página en unos minutos.`;
+  }
+}
+
+/** año del plan: el sufijo más frecuente en los números de contrato */
+function anioDelPlan(filas) {
+  const c = {};
+  filas.forEach(f => { const m = /-(\d{4})\s*$/.exec(f.cto || ''); if (m) c[m[1]] = (c[m[1]] || 0) + 1; });
+  const top = Object.entries(c).sort((a, b) => b[1] - a[1])[0];
+  return top ? top[0] : String(new Date().getFullYear());
+}
+
+/* ---------- el cruce ---------- */
+function cruzar(filas, secop) {
+  const porRef = new Map(), porCed = new Map(), porNom = new Map(), cuotaCnp = new Map();
+  const push = (m, k, v) => { if (k) { if (!m.has(k)) m.set(k, []); m.get(k).push(v); } };
+
+  filas.forEach(f => {
+    push(porRef, normRef(f.cto), f);
+    push(porCed, f.ced, f);
+    push(porNom, normNom(f.nom), f);
+    if (f.cuota && f.cnp) {
+      const k = Math.round(f.cuota);
+      if (!cuotaCnp.has(k)) cuotaCnp.set(k, new Set());
+      cuotaCnp.get(k).add(f.cnp);
+    }
+  });
+
+  secop.forEach(c => {
+    c._ref = normRef(c.referencia_del_contrato);
+    c._ced = soloDig(c.documento_proveedor);
+    c._nom = normNom(c.proveedor_adjudicado);
+    c._val = c.valor_del_contrato == null ? null : Number(c.valor_del_contrato);
+    c._firma = (c.fecha_de_firma || '').slice(0, 10) || null;
+    c._fin = (c.fecha_de_fin_del_contrato || '').slice(0, 10) || null;
+    c._vig = vigencia(c);
+    c._url = (c.urlproceso && c.urlproceso.url) || '';
+  });
+
+  // contrato vigente por persona
+  const vigPersona = new Map();
+  secop.forEach(c => {
+    if (!c._ced) return;
+    const clave = [c._vig === 'Sí' ? 1 : 0, c._fin || '', c._firma || ''].join('|');
+    const prev = vigPersona.get(c._ced);
+    if (!prev || clave > prev.clave) vigPersona.set(c._ced, {clave, c});
+  });
+  const marcaVig = c => {
+    const reg = vigPersona.get(c._ced);
+    if (!reg) return '';
+    if (reg.c._ref !== c._ref) return 'Contrato anterior — el vigente es ' + reg.c.referencia_del_contrato;
+    return c._vig === 'Sí' ? 'SÍ — contrato vigente'
+                           : 'Último contrato del contratista — ' + c._vig.replace('No — ', '');
+  };
+
+  /** cuotas del plan que dividen exacto este valor, con su CNP */
+  const compatibles = val => {
+    if (!val) return [];
+    const r = [];
+    cuotaCnp.forEach((cnps, q) => { if (multiploCuota(val, q)) r.push({q, cnps: [...cnps].sort()}); });
+    return r.sort((a, b) => b.q - a.q).slice(0, 3);
+  };
+
+  const ya = [], nuevas = [], huerfanas = [], difValor = [], todos = [];
+
+  secop.forEach(c => {
+    const cand = porRef.get(c._ref);
+    if (cand && cand.length) {                       // ya registrado
+      const exactas = cand.filter(f => f.ced === c._ced);
+      const titular = exactas.length ? exactas[0] : cand[0];
+      ya.push(c);
+      if (titular.vrtot && c._val && Math.abs(titular.vrtot - c._val) > 1) {
+        difValor.push({fila: titular.f, contrato: c.referencia_del_contrato,
+                       nombre: c.proveedor_adjudicado, plan: titular.vrtot, secop: c._val,
+                       dif: Math.abs(titular.vrtot - c._val)});
+      }
+      todos.push(fila(c, titular.cnp, 'Ya registrado', marcaVig(c)));
+      return;
+    }
+
+    const hist = (porCed.get(c._ced) || []);
+    const porNombre = hist.length ? [] : (porNom.get(c._nom) || []);
+    const base = hist.length ? hist : porNombre;
+
+    if (!base.length) {                              // sin insuficiencia
+      huerfanas.push({...datos(c), compat: compatibles(c._val)});
+      todos.push(fila(c, '', 'Sin insuficiencia', marcaVig(c)));
+      return;
+    }
+
+    // ancla: la fila cuya cuota divide exacto el valor; si ninguna, la última del bloque
+    const calzan = base.filter(f => multiploCuota(c._val, f.cuota));
+    const ancla = calzan.length ? calzan[calzan.length - 1] : base[base.length - 1];
+    const cuadra = calzan.length > 0;
+    const n = {...datos(c), cnp: ancla.cnp || '', cuota: ancla.cuota,
+               ncuotas: cuadra ? multiploCuota(c._val, ancla.cuota) : null,
+               cuadra, via: hist.length ? 'cédula' : 'nombre',
+               compat: cuadra ? [] : compatibles(c._val)};
+    nuevas.push(n);
+    todos.push(fila(c, n.cnp, cuadra ? 'Fila nueva' : 'Fila nueva — verificar', marcaVig(c)));
+  });
+
+  // del plan y no en SECOP
+  const refsSecop = new Set(secop.map(c => c._ref));
+  const sinSecop = filas.filter(f => normRef(f.cto) && !refsSecop.has(normRef(f.cto)))
+                        .map(f => ({fila: f.f, contrato: f.cto, cedula: f.ced, nombre: f.nom, cnp: f.cnp || ''}));
+
+  return {ya, nuevas, huerfanas, difValor, sinSecop, todos, totalSecop: secop.length,
+          totalPlan: filas.length};
+
+  function datos(c) {
+    return {contrato: c.referencia_del_contrato, cedula: c._ced, nombre: c.proveedor_adjudicado,
+            valor: c._val, firma: c._firma, fin: c._fin, estado: c.estado_contrato,
+            vigente: c._vig, url: c._url};
+  }
+  function fila(c, cnp, cruce, vigPers) {
+    return {contrato: c.referencia_del_contrato, cedula: c._ced, nombre: c.proveedor_adjudicado,
+            cnp: cnp || '', valor: c._val, firma: c._firma, fin: c._fin, estado: c.estado_contrato,
+            vigente: c._vig, vigPersona: vigPers, cruce, url: c._url};
+  }
+}
+
+function vigencia(c) {
+  const est = (c.estado_contrato || '').trim().toLowerCase();
+  if (['terminado', 'cerrado', 'cedido'].includes(est)) return 'No — ' + est + ' en SECOP';
+  const ini = (c.fecha_de_firma || '').slice(0, 10), fin = (c.fecha_de_fin_del_contrato || '').slice(0, 10);
+  if (fin && fin < hoyISO) return 'No — terminó el ' + fdate(fin);
+  if (ini && ini > hoyISO) return 'No — aún no inicia';
+  return 'Sí';
+}
+
+/* ---------- render ---------- */
+function pintar(R) {
+  const verificar = R.nuevas.filter(n => !n.cuadra);
+  const kpis = [
+    ['Contratos en SECOP', R.totalSecop, 'Prestación de servicios · contratación directa · persona natural', ''],
+    ['Ya registrados en el plan', R.ya.length, 'Cruzaron por número de contrato', 'ok'],
+    ['Filas nuevas por añadir', R.nuevas.length, 'Contratistas que ya venían ocupando una insuficiencia', 'new'],
+    ['Cuota a verificar', verificar.length, 'El valor no es múltiplo de la cuota de su insuficiencia', 'warn'],
+    ['Sin insuficiencia asignada', R.huerfanas.length, 'Tienen contrato pero no figuran en el plan', 'info'],
+    ['En el plan y no en SECOP', R.sinSecop.length, 'Verificar número o publicación', 'warn'],
+  ];
+  document.getElementById('kpis').innerHTML = kpis.map(([t, v, d, c]) =>
+    `<div class="kpi ${c}"><div class="v">${v}</div><div class="t">${t}</div><div class="d">${d}</div></div>`).join('');
+
+  const compat = l => l && l.length
+    ? l.map(x => `${pesos(x.q)} <span class="mono">(${esc(x.cnps.slice(0,4).join(', '))})</span>`).join('<br>')
+    : '<span class="cnt">ninguna</span>';
+  const razon = n => !n.cuota || !n.valor
+    ? '<span class="pill p-sin">sin cuota registrada</span>'
+    : `<b>${(n.valor / n.cuota).toFixed(2)}</b>`;
+
+  document.getElementById('n1').textContent = `(${verificar.length})`;
+  document.getElementById('t1').innerHTML = verificar
+    .sort((a, b) => (a.cuota ? 0 : 1) - (b.cuota ? 0 : 1) || (a.nombre || '').localeCompare(b.nombre || ''))
+    .map(n => `<tr><td class="mono">${esc(n.contrato)}</td><td class="mono">${esc(n.cedula)}</td>
+      <td>${esc(n.nombre)}</td><td class="mono">${esc(n.cnp)}</td><td class="num">${pesos(n.valor)}</td>
+      <td class="num">${pesos(n.cuota)}</td><td class="num">${razon(n)}</td><td class="nota">${compat(n.compat)}</td></tr>`).join('')
+    || '<tr><td colspan="8" class="empty">Sin casos.</td></tr>';
+
+  document.getElementById('n2').textContent = `(${R.huerfanas.length})`;
+  document.getElementById('t2').innerHTML = R.huerfanas
+    .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+    .map(h => `<tr><td class="mono">${esc(h.contrato)}</td><td class="mono">${esc(h.cedula)}</td>
+      <td>${esc(h.nombre)}</td><td class="num">${pesos(h.valor)}</td><td>${fdate(h.firma)}</td>
+      <td>${fdate(h.fin)}</td><td>${esc(h.estado)}</td>
+      <td>${h.vigente === 'Sí' ? '<span class="pill pill-ok">Vigente</span>' : esc(h.vigente)}</td>
+      <td class="nota">${compat(h.compat)}</td></tr>`).join('')
+    || '<tr><td colspan="9" class="empty">Sin casos.</td></tr>';
+
+  document.getElementById('n3').textContent = `(${R.sinSecop.length})`;
+  document.getElementById('t3').innerHTML = R.sinSecop.map(s =>
+    `<tr><td class="num">${esc(s.fila)}</td><td class="mono">${esc(s.contrato)}</td>
+     <td class="mono">${esc(s.cedula)}</td><td>${esc(s.nombre)}</td><td class="mono">${esc(s.cnp)}</td></tr>`).join('')
+    || '<tr><td colspan="5" class="empty">Sin casos.</td></tr>';
+
+  document.getElementById('n4').textContent = `(${R.difValor.length})`;
+  document.getElementById('t4').innerHTML = R.difValor
+    .sort((a, b) => b.dif - a.dif)
+    .map(a => `<tr><td class="num">${esc(a.fila)}</td><td class="mono">${esc(a.contrato)}</td>
+      <td>${esc(a.nombre)}</td><td class="num">${pesos(a.plan)}</td><td class="num">${pesos(a.secop)}</td>
+      <td class="num">${pesos(a.dif)}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="empty">Sin diferencias.</td></tr>';
+
+  document.getElementById('n5').textContent = `(${R.totalSecop})`;
+  tabla();
+}
+
+const CLS = {'Ya registrado': 'p-ya', 'Fila nueva': 'p-nueva', 'Fila nueva — verificar': 'p-ver', 'Sin insuficiencia': 'p-sin'};
+
+function filtradas() {
+  const t = document.getElementById('q').value.trim().toLowerCase();
+  const c = document.getElementById('fc').value, v = document.getElementById('fv').value;
+  return CRUCE.todos.filter(d =>
+    (!c || d.cruce === c) &&
+    (!v || (v === 'si' ? d.vigente === 'Sí' : d.vigente !== 'Sí')) &&
+    (!t || [d.nombre, d.cedula, d.contrato, d.cnp].join(' ').toLowerCase().includes(t)));
+}
+
+function tabla() {
+  const rows = filtradas();
+  document.getElementById('cnt').textContent = `${rows.length} de ${CRUCE.todos.length} contratos`;
+  document.getElementById('t5').innerHTML = rows.map(d => `<tr>
+    <td class="mono">${esc(d.contrato)}</td><td class="mono">${esc(d.cedula)}</td>
+    <td>${esc(d.nombre)}</td><td class="mono">${esc(d.cnp)}</td>
+    <td class="num">${pesos(d.valor)}</td><td>${fdate(d.firma)}</td><td>${fdate(d.fin)}</td>
+    <td>${esc(d.estado)}</td>
+    <td>${d.vigente === 'Sí' ? '<span class="pill pill-ok">Vigente</span>' : esc(d.vigente)}</td>
+    <td>${esc(d.vigPersona)}</td>
+    <td><span class="pill ${CLS[d.cruce] || ''}">${esc(d.cruce)}</span></td>
+    <td>${d.url ? `<a href="${esc(d.url)}" target="_blank" rel="noopener">Ver</a>` : ''}</td></tr>`).join('')
+    || '<tr><td colspan="12" class="empty">Sin resultados.</td></tr>';
+}
+
+function descargar() {
+  const ws = XLSX.utils.json_to_sheet(filtradas().map(d => ({
+    'Contrato': d.contrato, 'Cédula': d.cedula, 'Nombre': d.nombre, 'CNP': d.cnp,
+    'Valor': d.valor, 'Fecha firma': d.firma, 'Fecha fin': d.fin, 'Estado SECOP': d.estado,
+    '¿Vigente?': d.vigente, 'Contrato vigente del contratista': d.vigPersona, 'Cruce': d.cruce, 'Enlace': d.url,
+  })));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Cruce');
+  XLSX.writeFile(wb, `cruce_plan_previsión_${hoyISO}.xlsx`);
+}
+
+['q', 'fc', 'fv'].forEach(id => document.getElementById(id).addEventListener('input', tabla));
+document.getElementById('xls').addEventListener('click', descargar);
+iniciar();
+</script>
+</body>
+</html>

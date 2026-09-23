@@ -478,9 +478,48 @@
             gap: 1rem;
             justify-content: flex-end;
         }
+        .tabs {
+            border-bottom: 1px solid #dadce0;
+            background: #ffffff;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+
+        .tabs .container {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .tab {
+            padding: 0.9rem 1.15rem;
+            font-size: 0.9rem;
+            color: #5f6368;
+            text-decoration: none;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            color: #202124;
+            background: #f8f9fa;
+        }
+
+        .tab.active {
+            color: #1f2937;
+            font-weight: 500;
+            border-bottom-color: #1f2937;
+        }
     </style>
 </head>
 <body>
+    <nav class="tabs">
+        <div class="container">
+            <a class="tab active" href="index.html">Buscador de contratos</a>
+            <a class="tab" href="informe_cruce.html">Cruce del plan de previsión</a>
+        </div>
+    </nav>
+
     <div class="header">
         <div class="container">
             <h1>Buscador de Contratos</h1>
